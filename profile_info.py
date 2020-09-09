@@ -15,7 +15,7 @@ from config import (
     username_file)
 
 
-URL_FMT = 'https://api.twitter.com/graphql/4S2ihIKfF3xhp-ENxvUAfQ/UserByScreenName?variables={{"screen_name":"{username}","withHighlightedLabel":true}}'
+USERNAME_URL_FMT = 'https://api.twitter.com/graphql/4S2ihIKfF3xhp-ENxvUAfQ/UserByScreenName?variables={{"screen_name":"{username}","withHighlightedLabel":true}}'
 
 RATE_LIMIT_SENTINEL = object()
 
@@ -32,7 +32,7 @@ def parse_cookies(cookie_header: str):
 
 
 def request_username_data(s, csrf, username):
-    resp = s.get(URL_FMT.format(username=username), headers={
+    resp = s.get(USERNAME_URL_FMT.format(username=username), headers={
             'Authorization': auth_header.strip(),
             'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0',
             'x-csrf-token': csrf
@@ -101,7 +101,7 @@ def main(username_f: pathlib.Path, delay_between_requests_seconds: float, sleep_
                     'userid': None,
                     'created_at': None,
                     'created_at_iso': None,
-                    'desc': str(e)
+                    'desc': repr(e)
                 }
 
             writer.writerow(username_data)
