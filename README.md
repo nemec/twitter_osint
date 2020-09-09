@@ -41,3 +41,10 @@ Output to both terminal _and_ CSV file:
 source /env/bin/activate  # if virtualenv is not already activated
 python3 profile_info.py | tee output.csv
 ```
+
+Expected output:
+
+```
+username,userid,created_at,created_at_iso,desc
+djnemec,29293461,Mon Apr 06 21:07:12 +0000 2009,2009-04-06T21:07:12+00:00Z,Success
+```
