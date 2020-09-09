@@ -37,6 +37,9 @@ def request_username_data(s, csrf, username):
             'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0',
             'x-csrf-token': csrf
         })
+
+    rate_limit_remaining = resp.headers.get('x-rate-limit-remaining')
+    rate_limit_reset = resp.headers.get('x-rate-limit-reset')
         
     if resp.status_code == 200:
         j = resp.json()
@@ -46,23 +49,23 @@ def request_username_data(s, csrf, username):
             created_at_iso = datetime.strptime(created_at, '%a %b %d %H:%M:%S %z %Y')
         except ValueError:
             pass
-        return {
+        return ({
             'username': username,
             'userid': j['data']['user']['rest_id'],
             'created_at': created_at,
             'created_at_iso': created_at_iso.strftime('%Y-%m-%dT%H:%M:%S+00:00Z'),
             'desc': 'Success'
-        }
+        }, rate_limit_remaining, rate_limit_reset)
     elif resp.status_code == 429:
-        return RATE_LIMIT_SENTINEL
+        return (RATE_LIMIT_SENTINEL, rate_limit_remaining, rate_limit_reset)
     else:
-        return {
+        return ({
             'username': username,
             'userid': None,
             'created_at': None,
             'created_at_iso': None,
             'desc': f'Error requesting API data. Status code {resp.status_code}'
-        }
+        }, rate_limit_remaining, rate_limit_reset)
 
 
 def main(username_f: pathlib.Path, delay_between_requests_seconds: float, sleep_after_rate_limit_seconds: float):
@@ -82,11 +85,14 @@ def main(username_f: pathlib.Path, delay_between_requests_seconds: float, sleep_
     for username in usernames:
         retries = 3
         while retries > 0:
-
             try:
-                username_data = request_username_data(s, csrf, username)
+                username_data, rate_limit_remaining, rate_limit_reset = request_username_data(s, csrf, username)
                 if username_data is RATE_LIMIT_SENTINEL:
                     time.sleep(sleep_after_rate_limit_seconds)
+                    retries -= 1
+                    continue
+                elif rate_limit_remaining == 0:
+                    time.sleep(rate_limit_reset - time.time() + sleep_after_rate_limit_seconds)
                     retries -= 1
                     continue
             except Exception as e:
